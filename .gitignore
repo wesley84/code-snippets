@@ -1,5 +1,8 @@
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes 
+# macOS system files
+.DS_Store        # Desktop Services Store metadata files
+.DS_Store?       # DS_Store files with unknown encoding
+._*             # Resource fork and other hidden macOS files
+
+# macOS Spotlight and Trash metadata
+.Spotlight-V100  # Spotlight index data
+.Trashes        # Directory containing deleted files 
