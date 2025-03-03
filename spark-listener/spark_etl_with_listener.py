@@ -40,9 +40,13 @@ class ETLStageTracker:
         # Wait for stage to complete
         while any(s.stageId == stage_id for s in self.tracker.getActiveStages()):
             time.sleep(0.1)
+            
+    def get_current_stages(self):
+        """Get currently active stage IDs"""
+        return self.tracker.getActiveStageIds()
 
 @track_stage_time
-def read_stage(spark):
+def read_stage(spark, stage_tracker):
     """First ETL stage: Data ingestion
     
     Reads CSV data from a specified path with schema inference.
@@ -53,23 +57,40 @@ def read_stage(spark):
         .option("inferSchema", "true") \
         .csv("/databricks-datasets/iot-stream/data-user/") \
         .repartition(10)
+    
+    # Force action to get stages
+    df.cache()
+    df.count()
+    
+    # Wait for all active stages
+    for stage_id in stage_tracker.get_current_stages():
+        print(f"Waiting for read stage {stage_id}")
+        stage_tracker.wait_for_stage(stage_id)
+        
     return df
 
 @track_stage_time
-def transform_stage(df):
+def transform_stage(df, stage_tracker):
     """Second ETL stage: Data transformation
     
     Filters records where age > 30 and caches the result.
     Forces evaluation by counting records to ensure caching occurs.
     """
     filtered_df = df.filter(col("age") > 30).cache()
-    # Force evaluation
+    
+    # Force evaluation and get stages
     count = filtered_df.count()
     print(f"Number of records after filtering: {count}")
+    
+    # Wait for all active stages
+    for stage_id in stage_tracker.get_current_stages():
+        print(f"Waiting for transform stage {stage_id}")
+        stage_tracker.wait_for_stage(stage_id)
+        
     return filtered_df
 
 @track_stage_time
-def write_stage(df):
+def write_stage(df, stage_tracker):
     """Final ETL stage: Data persistence
     
     Writes the transformed data to a Delta table, overwriting existing data.
@@ -77,7 +98,12 @@ def write_stage(df):
     df.write \
         .mode("overwrite") \
         .format("delta") \
-        .saveAsTable("adb_swxxef_workspace.`td-test`.tracker_users_listener")
+        .saveAsTable("adb_cb6l9m_workspace.`demo-dataset`.tracker_users_listener")
+        
+    # Wait for all active stages
+    for stage_id in stage_tracker.get_current_stages():
+        print(f"Waiting for write stage {stage_id}")
+        stage_tracker.wait_for_stage(stage_id)
 
 def run_etl():
     """Main ETL orchestration function
@@ -89,13 +115,22 @@ def run_etl():
     
     Includes error handling but spark.stop() is currently commented out
     """
-    # Create Spark session with some configurations for better performance
+    
+    # Initialize stage tracker
+    stage_tracker = ETLStageTracker(spark)
     
     try:
         # Execute stages
-        df = read_stage(spark)
-        filtered_df = transform_stage(df)
-        write_stage(filtered_df)
+        print("Starting read stage...")
+        df = read_stage(spark, stage_tracker)
+        
+        print("Starting transform stage...")
+        filtered_df = transform_stage(df, stage_tracker)
+        
+        print("Starting write stage...")
+        write_stage(filtered_df, stage_tracker)
+        
+        print("ETL pipeline completed successfully")
         
     except Exception as e:
         print(f"Error during ETL process: {str(e)}")
