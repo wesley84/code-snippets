@@ -1,0 +1,57 @@
+bundle:
+  name: "delta-notifier"
+
+variables:
+  table_path:
+    description: "Full path to Delta table to monitor"
+    default: "catalog.schema.table"
+  operations_to_monitor:
+    description: "List of operations to monitor"
+    type: array
+    default:
+      - "CREATE"
+      - "ALTER"
+      - "ADD PARTITION"
+      - "DROP PARTITION"
+  notification_config:
+    description: "Notification configuration"
+    type: object
+    default:
+      slack:
+        webhook_url: "{{secrets.slack_webhook_url}}"
+      email:
+        smtp:
+          host: "smtp.example.com"
+          port: 587
+          use_tls: true
+          sender: "notifications@example.com"
+          username: "{{secrets.smtp_username}}"
+          password: "{{secrets.smtp_password}}"
+        recipients:
+          - "team@example.com"
+  cluster_config:
+    description: "Cluster configuration"
+    type: object
+    default:
+      spark_version: "13.3.x-scala2.12"
+      node_type_id: "Standard_DS3_v2"
+      num_workers: 1
+      spark_conf:
+        "spark.databricks.delta.preview.enabled": "true"
+
+resources:
+  jobs:
+    delta-notifier-job:
+      name: "Delta Table Monitor"
+      job_clusters:
+        - job_cluster_key: "monitor_cluster"
+          new_cluster: ${var.cluster_config}
+      tasks:
+        - task_key: "monitor_changes"
+          job_cluster_key: "monitor_cluster"
+          python_wheel_task:
+            package_name: "delta_notifier"
+            entry_point: "main"
+            named_parameters:
+              table_path: ${var.table_path}
+              notification_config: ${var.notification_config} 
