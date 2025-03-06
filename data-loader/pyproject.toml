@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "data_loader"
+version = "0.0.1"
+description = "Data loader for downloading and loading data to Unity Catalog"
+authors = ["wesleydias@gmail.com"]
+packages = [
+    { include = "data_loader", from = "src" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.31.0"
+pyspark = "^3.5.0"
+databricks-sdk = "^0.12.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+entrypoint = "data_loader.main:entrypoint" 

@@ -1,0 +1,89 @@
+bundle:
+  name: "data-loader-bundle"
+
+variables:
+  data_url:
+    description: "The URL of the data to load"
+    default: "https://data.humdata.org/dataset/f8d1b3cf-fd3e-4be1-aadb-025466650b4a/resource/3338f064-461d-4e4b-8139-f542f61abbc0/download/population_npl_2018-10-01.csv.zip,https://data.humdata.org/dataset/f8d1b3cf-fd3e-4be1-aadb-025466650b4a/resource/03e8e1fb-058c-4783-9a5a-9c23766534a3/download/npl_children_under_five_2019-06-01_csv.zip,https://data.humdata.org/dataset/f8d1b3cf-fd3e-4be1-aadb-025466650b4a/resource/f7a00620-7e12-4fd0-b570-a741116a14ad/download/npl_elderly_60_plus_2019-06-01_csv.zip,https://data.humdata.org/dataset/f8d1b3cf-fd3e-4be1-aadb-025466650b4a/resource/7ab184de-2b6f-400e-b90b-6b6bd75361c1/download/npl_men_2019-06-01_csv.zip,https://data.humdata.org/dataset/f8d1b3cf-fd3e-4be1-aadb-025466650b4a/resource/10d198cb-5a82-42a7-8a43-747abff9490c/download/npl_women_2019-06-01_csv.zip,https://data.humdata.org/dataset/f8d1b3cf-fd3e-4be1-aadb-025466650b4a/resource/dce20c6e-b77f-485d-9592-08be72eb84aa/download/npl_women_of_reproductive_age_15_49_2019-06-01_csv.zip,https://data.humdata.org/dataset/f8d1b3cf-fd3e-4be1-aadb-025466650b4a/resource/cad3f14d-6562-4e5d-aa48-318931367524/download/npl_youth_15_24_2019-06-01_csv.zip"
+  catalog_name:
+    description: "The catalog name to use for data loading"
+    default: "main"
+  schema_name:
+    description: "The schema name to use for data loading"
+    default: "default"
+  volume_name:
+    description: "The volume name to use for data storage"
+    default: "raw_data"
+  table_name:
+    description: "The name of the target Delta table"
+    default: "population_data"
+  cluster_config:
+    description: "Cluster configuration for the job"
+    type: complex
+    default:
+      spark_version: "13.3.x-scala2.12"
+      node_type_id: "Standard_DS3_v2"
+      num_workers: 2
+      spark_conf:
+        "spark.databricks.delta.preview.enabled": "true"
+
+artifacts:
+  default:
+    type: whl
+    build: poetry build
+    path: .
+
+resources:
+  jobs:
+    data-loader-job:
+      name: "Data Loader Job"
+      job_clusters:
+        - job_cluster_key: "loader_cluster"
+          new_cluster: ${var.cluster_config}
+
+      tasks:
+        - task_key: "load_data"
+          job_cluster_key: "loader_cluster"
+          python_wheel_task:
+            package_name: "data_loader"
+            entry_point: "entrypoint"
+            parameters:
+              - --catalog_name=${var.catalog_name}
+              - --data_url=${var.data_url}
+              - --volume_path=${var.catalog_name}/${var.schema_name}/${var.volume_name}
+              - --table_name=${var.table_name}
+              - --schema_name=${var.schema_name}
+          libraries:
+            - whl: "./dist/*.whl"
+
+targets:
+  dev:
+    default: true
+    mode: development
+    variables:
+      catalog_name: "dev_catalog"
+      schema_name: "dev_schema"
+      volume_name: "dev_data"
+      table_name: "population_data_dev"
+  
+  prod:
+    mode: production
+    workspace:
+      host: "{{workspace_host}}"
+    variables:
+      catalog_name: "prod_catalog"
+      schema_name: "prod_schema"
+      volume_name: "prod_data"
+      table_name: "population_data_prod"
+    presets:
+      name_prefix: 'prod_'
+      tags:
+        environment: production
+
+sync:
+  include:
+    - "*.py"
+    - "requirements.txt"
+  exclude:
+    - "**/__pycache__"
+    - "*.pyc" 

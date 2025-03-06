@@ -1,0 +1,40 @@
+# Python build artifacts
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Poetry
+poetry.lock
+
+# Virtual environments
+venv/
+env/
+.env/
+.venv/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Databricks
+.databricks/
+.dbx/
+.databrickscfg
+*.env
+.env*
+credentials/
+config/*.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Add these entries
+.pytest_cache/
+.coverage
+coverage.xml
