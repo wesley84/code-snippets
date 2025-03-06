@@ -103,17 +103,13 @@ poetry build
 ### 2. Deploy to Databricks
 
 bash
-databricks bundle deploy -t dev
+databricks bundle deploy --var="table_path=adb_cb6l9m_workspace.main.population_npl_2018-10-01" -t dev -p adb-wes-test
 
 
 ### 3. Run the Monitor
 
 bash
-databricks bundle run -t dev delta-notifier-job \
---parameters='{
-"table_path": "catalog.schema.table_name",
-"operations_to_monitor": ["CREATE", "ALTER"]
-}'
+databricks bundle run -t dev -p adb-wes-test
 
 
 ## Features

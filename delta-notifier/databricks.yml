@@ -1,6 +1,12 @@
 bundle:
   name: "delta-notifier"
 
+artifacts:
+  default:
+    type: whl
+    build: poetry build
+    path: .
+
 variables:
   table_path:
     description: "Full path to Delta table to monitor"
@@ -38,6 +44,39 @@ variables:
       num_workers: 1
       spark_conf:
         "spark.databricks.delta.preview.enabled": "true"
+  permissions:
+    description: "Required Unity Catalog permissions"
+    type: array
+    default:
+      - "USE_CATALOG ON CATALOG system"
+      - "USE_SCHEMA ON SCHEMA system.access"
+      - "SELECT ON TABLE system.access.audit"
+
+targets:
+  dev:
+    default: true
+    mode: development
+    variables:
+      table_path: "adb_cb6l9m_workspace.main.population_npl_2018-10-01"
+      operations_to_monitor:
+        - "CREATE"
+        - "ALTER"
+  
+  prod:
+    mode: production
+    workspace:
+      host: "{{workspace_host}}"
+    variables:
+      table_path: "prod.main.population_data"
+      operations_to_monitor:
+        - "CREATE"
+        - "ALTER"
+        - "ADD PARTITION"
+        - "DROP PARTITION"
+    presets:
+      name_prefix: 'prod_'
+      tags:
+        environment: production
 
 resources:
   jobs:
@@ -54,4 +93,3 @@ resources:
             entry_point: "main"
             named_parameters:
               table_path: ${var.table_path}
-              notification_config: ${var.notification_config} 
