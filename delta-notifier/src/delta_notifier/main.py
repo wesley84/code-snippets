@@ -5,15 +5,23 @@ from pyspark.sql import SparkSession
 from delta_notifier.table_monitor import DeltaTableMonitor
 from delta_notifier.handlers.slack import SlackNotificationHandler
 from delta_notifier.handlers.email import EmailNotificationHandler
+from delta_notifier.handlers.delta import DeltaHandler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def main():
+    spark = SparkSession.builder.getOrCreate()
+    
     parser = argparse.ArgumentParser(description='Monitor Delta table changes')
-    parser.add_argument('--table_path', required=True, help='Full path to Delta table')
+    parser.add_argument('--table_path', help='Full path to Delta table (optional)')
+    parser.add_argument('--catalog', help='Catalog to monitor (if no table_path)')
+    parser.add_argument('--schema', help='Schema to monitor (if no table_path)')
+    parser.add_argument('--days_lookback', type=int, default=2, help='Number of days to look back for changes')
     parser.add_argument('--operations_to_monitor', type=str, help='JSON array of operations to monitor')
     parser.add_argument('--notification_config', type=str, help='JSON notification configuration')
+    parser.add_argument('--output_table', default='adb_cb6l9m_workspace.main.table_changes', 
+                       help='Delta table to store change events')
     
     args = parser.parse_args()
     
@@ -25,10 +33,18 @@ def main():
     monitor = DeltaTableMonitor(
         spark=spark,
         table_path=args.table_path,
-        operations_to_monitor=operations
+        catalog=args.catalog,
+        schema=args.schema,
+        operations_to_monitor=operations,
+        days_lookback=args.days_lookback
     )
     
-    # Add notification handlers
+    # Add Delta handler as default
+    monitor.add_notification_handler(
+        DeltaHandler(spark, args.output_table)
+    )
+    
+    # Add optional notification handlers
     if 'slack' in notification_config:
         slack_config = notification_config['slack']
         monitor.add_notification_handler(
@@ -45,7 +61,6 @@ def main():
         )
     
     # Start monitoring
-    logger.info(f"Starting monitoring for table: {args.table_path}")
     monitor.monitor_table_changes()
 
 if __name__ == "__main__":

@@ -9,16 +9,25 @@ artifacts:
 
 variables:
   table_path:
-    description: "Full path to Delta table to monitor"
-    default: "catalog.schema.table"
+    description: "Full path to Delta table (optional)"
+    default: null
+  catalog:
+    description: "Catalog to monitor (if no table_path)"
+    default: "adb_cb6l9m_workspace"
+  schema:
+    description: "Schema to monitor (if no table_path)"
+    default: "main"
+  days_lookback:
+    description: "Number of days to look back for changes"
+    type: number
+    default: 2
   operations_to_monitor:
     description: "List of operations to monitor"
     type: array
     default:
       - "CREATE"
       - "ALTER"
-      - "ADD PARTITION"
-      - "DROP PARTITION"
+      - "DROP"
   notification_config:
     description: "Notification configuration"
     type: object
@@ -44,13 +53,18 @@ variables:
       num_workers: 1
       spark_conf:
         "spark.databricks.delta.preview.enabled": "true"
+  output_table:
+    description: "Delta table to store change events"
+    default: "adb_cb6l9m_workspace.main.table_changes"
   permissions:
     description: "Required Unity Catalog permissions"
     type: array
     default:
       - "USE_CATALOG ON CATALOG system"
       - "USE_SCHEMA ON SCHEMA system.access"
-      - "SELECT ON TABLE system.access.audit"
+      - "SELECT ON TABLE system.information_schema.tables"
+      - "CREATE TABLE ON SCHEMA audit"  # For output table
+      - "MODIFY ON SCHEMA audit"        # For output table
 
 targets:
   dev:
@@ -91,5 +105,12 @@ resources:
           python_wheel_task:
             package_name: "delta_notifier"
             entry_point: "main"
-            named_parameters:
-              table_path: ${var.table_path}
+            parameters: [
+              "--table_path", "${var.table_path}",
+              "--catalog", "${var.catalog}",
+              "--schema", "${var.schema}",
+              "--days_lookback", "${var.days_lookback}",
+              "--output_table", "${var.output_table}"
+            ]
+          libraries:
+            - whl: "./dist/*.whl"

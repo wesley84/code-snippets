@@ -19,18 +19,16 @@ class SlackNotificationHandler(NotificationHandler):
         message = "🔔 *Delta Table Changes Detected*\n\n"
         
         for change in changes:
-            message += f"• *{change['operation_type']}*\n"
-            message += f"  - Version: {change['version']}\n"
+            message += f"• *{change['operation_type']}* on `{change['table']}`\n"
             message += f"  - Time: {change['timestamp']}\n"
-            message += f"  - User: {change['user']}\n"
+            message += f"  - Type: {change['table_type']}\n"
             
-            # Add operation-specific details
-            if 'schema' in change:
-                message += f"  - Schema: {change['schema']}\n"
-            if 'changes' in change:
-                message += f"  - Changes: {change['changes']}\n"
-            if 'partition_details' in change:
-                message += f"  - Partition Details: {change['partition_details']}\n"
+            if 'format' in change:
+                message += f"  - Format: {change['format']}\n"
+            if 'partitioning' in change:
+                message += f"  - Partitioning: {change['partitioning']}\n"
+            if 'properties' in change:
+                message += f"  - Properties: {change['properties']}\n"
             
             message += "\n"
             

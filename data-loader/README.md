@@ -70,14 +70,13 @@ poetry build
 
 ### 2. Deploy to Databricks
 bash
-databricks bundle deploy -t dev
+data-loader % databricks bundle deploy --var="catalog_name=adb_cb6l9m_workspace" --var="schema_name=main" --var="volume_name=voly" -t dev -p adb-wes-test
 
 ### 3. Run the Job
 
 #### Using CLI:
 bash
-databricks bundle run -t dev data-loader-job \
---parameters="data_url=https://example.com/data.zip"
+databricks bundle run -t dev -p adb-wes-test
 
 ## Features
 

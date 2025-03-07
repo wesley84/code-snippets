@@ -123,19 +123,19 @@ class DataFileLoader:
         Returns:
             Full path in volume including filename
         """
-        # Get the source filename
-        file_name = os.path.basename(file_path)
+        # Get the source filename without extension
+        file_name = os.path.splitext(os.path.basename(file_path))[0]
         
         # Ensure volume directory exists
         volume_file_path = f"{self.volume_path}/{volume_dir}/{file_name}"
         
         # Create directory if it doesn't exist
-        volume_dir_path = f"/Volumes/{self.volume_path}/{volume_dir}/{file_name}"
+        volume_dir_path = f"/Volumes/{self.volume_path}/{volume_dir}"
         if not self.dbutils.fs.ls(volume_dir_path):
             self.dbutils.fs.mkdirs(volume_dir_path)
         
         # Copy file to volume with filename
-        self.dbutils.fs.cp(f"file:{file_path}", f"/Volumes/{self.volume_path}/{volume_dir}/{file_name}")
+        self.dbutils.fs.cp(f"file:{file_path}", f"/Volumes/{volume_file_path}")
         logger.info(f"File copied to volume: {volume_file_path}")
         return volume_file_path
     
@@ -147,8 +147,11 @@ class DataFileLoader:
                           options: dict = None) -> None:
         """Creates Delta table from CSV in volume using Spark"""
         logger.info(f"Creating Delta table {table_name}")
-        filename = os.path.basename(volume_path).replace('.csv', '')
-        table_name = filename
+        
+        # Get base name without extension for table name
+        filename = os.path.splitext(os.path.basename(volume_path))[0]
+        table_name = filename.replace('-', '_')  # Replace hyphens with underscores
+        
         read_options = {
             "header": "true",
             "inferSchema": "true"
@@ -161,8 +164,8 @@ class DataFileLoader:
             .csv(f"/Volumes/{volume_path}")
         
         # Add source_file column
-        from pyspark.sql.functions import lit, input_file_name
-        df = df.withColumn("source_file", col("_metadata.file_name")) 
+        from pyspark.sql.functions import lit
+        df = df.withColumn("source_file", lit(filename))
         
         if schema_name:
             table_name = f"{catalog_name}.{schema_name}.`{table_name}`"
