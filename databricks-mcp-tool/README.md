@@ -71,6 +71,92 @@ When integrated with an AI assistant, you can ask questions like:
 - "Show me all schemas in the 'samples' catalog"
 - "List all tables in the 'main' schema of the 'adb_cb6l9m_workspace' catalog"
 
+## Integrating with Cursor MCP
+
+After starting the server, you can integrate it with Cursor using the Model Context Protocol (MCP). This allows Cursor's AI assistant to directly query your Databricks workspace.
+
+### Configuration Options
+
+You can configure the MCP server in Cursor using one of these methods (in order of recommendation):
+
+#### 1. Project-specific Configuration (Recommended)
+
+Create a `.cursor/mcp.json` file in your project directory:
+
+```json
+{
+  "mcpServers": {
+    "databricks-unity-catalog": {
+      "transport": "sse",
+      "url": "http://localhost:8765/sse"
+    }
+  }
+}
+```
+
+#### 2. Global Configuration
+
+For using this tool across all projects, create a `~/.cursor/mcp.json` file in your home directory:
+
+```json
+{
+  "mcpServers": {
+    "databricks-unity-catalog": {
+      "transport": "sse",
+      "url": "http://localhost:8765/sse"
+    }
+  }
+}
+```
+
+#### 3. UI Configuration
+
+While not recommended (as it doesn't support environment variables), you can also add the server through the Cursor UI:
+
+1. Go to `Cursor Settings` > `Features` > `MCP`
+2. Click `+ Add New MCP Server`
+3. Select `SSE` as the transport type
+4. Enter a server name (e.g., `databricks-unity-catalog`)
+5. Enter the SSE endpoint URL: `http://localhost:8765/sse`
+
+### Using the Tools in Cursor
+
+Once configured, Cursor's Agent will automatically detect and use the Databricks tools when relevant. You can explicitly ask the Agent to use these tools with queries like:
+
+- "Show me the catalogs in my Databricks workspace"
+- "List the schemas in the samples catalog"
+- "What tables are available in the main schema of my workspace catalog?"
+
+### Tool Approval
+
+By default, when Cursor's Agent wants to use an MCP tool, it will display a message asking for your approval. You can expand the message to see what arguments the Agent is using.
+
+If you prefer, you can enable "Yolo mode" in Cursor settings to allow the Agent to run MCP tools without requiring approval.
+
+## Example Results in Cursor
+
+Below is an example of how the results appear in the Cursor chat window when using the Databricks MCP tools:
+
+### Listing Catalogs
+
+![Cursor MCP Listing Catalogs](images/catalog_prompt.png)
+
+![Cursor MCP Listing Catalogs](images/list_catalog.png)
+
+*Screenshot: Cursor Agent using the list_catalogs tool to display available catalogs in the Databricks workspace.*
+
+### Listing Schemas in a Catalog
+
+![Cursor MCP Listing Schemas](images/list_schema.png)
+
+*Screenshot: Cursor Agent using the list_schemas tool to display schemas in a specific catalog.*
+
+### Listing Tables in a Schema
+
+![Cursor MCP Listing Tables](images/list_tables.png)
+
+*Screenshot: Cursor Agent using the list_tables tool to display tables in a specific schema.*
+
 ## Project Structure
 - `mcp_databricks_tool/`: Main package directory
   - `unity_catalog_server.py`: Core server implementation
