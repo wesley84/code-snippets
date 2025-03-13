@@ -51,10 +51,8 @@ Configure your Databricks credentials using one of these methods:
 
 ### Running the Server
 ```bash
-# Using the run_server.py script (recommended)
-python run_server.py --transport sse --port 8765
 
-# Or using the module directly (if installed)
+# using the module directly (if installed)
 python -m mcp_databricks_tool --transport sse --port 8765
 ```
 
