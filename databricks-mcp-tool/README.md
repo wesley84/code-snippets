@@ -1,11 +1,11 @@
 # Databricks MCP Tool
 
 ## Overview
-This tool provides a server interface for interacting with Databricks Unity Catalog through the Model Control Plane (MCP) protocol. It allows AI assistants and other applications to query Databricks metadata and explore data assets programmatically.
+This tool provides a server interface for interacting with Databricks Unity Catalog through the Model Context Protocol (MCP). It allows AI assistants and other applications to query Databricks metadata and explore data assets programmatically.
 
 ## Features
 - **Unity Catalog Exploration**: Query catalogs, schemas, and tables in your Databricks workspace
-- **MCP Protocol Support**: Implements the Model Control Plane protocol for AI assistant integration
+- **MCP Protocol Support**: Implements the Model Context Protocol for AI assistant integration
 - **Multiple Transport Options**: Supports both stdio and Server-Sent Events (SSE) transports
 - **Environment Variable Configuration**: Easily configure with environment variables or direct parameters
 
